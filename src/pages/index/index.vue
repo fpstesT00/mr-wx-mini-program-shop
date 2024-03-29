@@ -4,6 +4,8 @@ import { onLoad } from '@dcloudio/uni-app'
 import CustomNavbar from './components/CustomNavbar.vue'
 import CategoryPanel from './components/CategoryPanel.vue'
 import HotPanel from './components/HotPanel.vue'
+// 骨架屏
+import PageSkeleton from './components/PageSkeleton.vue'
 import { getHomeBannerApi, getHomeCategoryAPI, getHomeHotAPI } from '@/services/home'
 import { ref } from 'vue'
 import type { BannerItem, CategoryItem, HotItem } from '@/types/home'
@@ -35,6 +37,8 @@ const onScrolltolower = () => {
 }
 // 下拉刷新状态
 const isTriggered = ref(false)
+// 是否加载
+const isLoading = ref(false)
 // 自定义下拉刷新被触发
 const onRefresherrefresh = async () => {
   // 开启动画
@@ -49,28 +53,31 @@ const onRefresherrefresh = async () => {
   ]) // 加载数据
   isTriggered.value = false // 关闭动画
 }
-onLoad(() => {
-  getHomeBannerData()
-  getHomeCategoryData()
-  getHomeHotData()
+onLoad(async () => {
+  isLoading.value = true
+  await Promise.all([getHomeBannerData(), getHomeCategoryData(), getHomeHotData()])
+  isLoading.value = false
 })
 </script>
 
 <template>
   <CustomNavbar />
-  <scroll-view
-    class="scroll-view"
-    scroll-y
-    @scrolltolower="onScrolltolower"
-    refresher-enabled
-    @refresherrefresh="onRefresherrefresh"
-    :refresher-triggered="isTriggered"
-  >
-    <XtxSwiper :list="bannerList" />
-    <CategoryPanel :list="categoryList" />
-    <HotPanel :list="hotList" />
-    <XtxGuess ref="guessRef" />
-  </scroll-view>
+  <PageSkeleton v-if="isLoading" />
+  <template v-else>
+    <scroll-view
+      class="scroll-view"
+      scroll-y
+      @scrolltolower="onScrolltolower"
+      refresher-enabled
+      @refresherrefresh="onRefresherrefresh"
+      :refresher-triggered="isTriggered"
+    >
+      <XtxSwiper :list="bannerList" />
+      <CategoryPanel :list="categoryList" />
+      <HotPanel :list="hotList" />
+      <XtxGuess ref="guessRef" />
+    </scroll-view>
+  </template>
 </template>
 
 <style lang="scss">
