@@ -22,17 +22,42 @@ const bannerPicture = ref('')
 // 下标标记
 const activeIndex = ref(0)
 // 保存推荐列表
-const subTypes = ref<SubTypeItem[]>([])
+const subTypes = ref<(SubTypeItem & { finish?: boolean })[]>([])
 // 获取数据
 const getHotRecommendData = async () => {
-  const res = await getHotRecommendAPI(currHot!.url)
-  console.log(res)
+  const res = await getHotRecommendAPI(currHot!.url, {
+    // 技巧：环境变量，开发环境，修改初始页面方便测试分页结束
+    page: import.meta.env.DEV ? 30 : 1,
+    pageSize: 10,
+  })
   // 保存封面
   bannerPicture.value = res.result.bannerPicture
   // 保存列表数据
   subTypes.value = res.result.subTypes
 }
 
+// 页面滚动触底
+const onScrolltolower = async () => {
+  const currSubTypes = subTypes.value[activeIndex.value]
+  // 让当前页面加1
+  if (currSubTypes.goodsItems.page < currSubTypes.goodsItems.pages) {
+    currSubTypes.goodsItems.page++
+  } else {
+    // 标记已结束
+    currSubTypes.finish = true
+    // 退出并轻提示
+    return uni.showToast({ icon: 'none', title: '没有更多数据了~' })
+  }
+  const res = await getHotRecommendAPI(currHot!.url, {
+    subType: currSubTypes.id,
+    page: currSubTypes.goodsItems.page,
+    pageSize: currSubTypes.goodsItems.pageSize,
+  })
+  // 新的列表选项
+  const newSubTypes = res.result.subTypes[activeIndex.value]
+  // 数组追加
+  currSubTypes.goodsItems.items.push(...newSubTypes.goodsItems.items)
+}
 // 页面加载完时调用
 onLoad(() => {
   getHotRecommendData()
@@ -63,6 +88,7 @@ onLoad(() => {
       v-for="(item, index) in subTypes"
       :key="item.id"
       v-show="activeIndex === index"
+      @scrolltolower="onScrolltolower"
     >
       <view class="goods">
         <navigator
@@ -80,7 +106,7 @@ onLoad(() => {
           </view>
         </navigator>
       </view>
-      <view class="loading-text">正在加载...</view>
+      <view class="loading-text">{{ item.finish ? '没有更多数据' : '正在加载...' }}</view>
     </scroll-view>
   </view>
 </template>
