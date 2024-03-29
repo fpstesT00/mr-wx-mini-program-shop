@@ -33,7 +33,6 @@ export const getHomeHotAPI = () => {
  */
 export const getHomeGoodsGuessLikeAPI = (data?: PageParams) => {
   return http<PageResult<GuessItem>>({
-    method: 'GET',
     url: '/home/goods/guessLike',
     data,
   })
